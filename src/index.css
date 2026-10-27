@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Motion tokens — mirrored from ui.md so CSS and JS agree. */
+    --dur-micro: 120ms;
+    --dur-base: 200ms;
+    --dur-panel: 320ms;
+    --dur-moment: 600ms;
+    --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Reserve the scrollbar's width so short and long pages do not shift
+       sideways when navigating between them. */
+    scrollbar-gutter: stable;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background-color: theme('colors.plum.100');
+    color: theme('colors.plum.900');
+  }
+
+  body {
+    @apply bg-paper text-ink;
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+
+    /* Kerning and common ligatures on, everywhere. Off by default in most
+       browsers below 20px, which is exactly where this interface lives. */
+    font-kerning: normal;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    text-rendering: optimizeLegibility;
+
+    /* Stem-darkening off on macOS so 400 weight does not bloat into 500. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /**
+   * Headings are Literata. The `opsz` axis is what makes a variable serif look
+   * drawn for its size rather than scaled: low values open the counters and
+   * thicken hairlines for small text, high values tighten them for display.
+   * Browsers only apply it automatically with font-optical-sizing, so each
+   * step sets it explicitly to match its rendered size.
+   */
+  h1, h2, h3, .font-serif {
+    font-family: Literata, Georgia, Cambria, serif;
+    font-optical-sizing: auto;
+    /* Serif numerals sit better lining than old-style in an interface. */
+    font-variant-numeric: lining-nums;
+  }
+
+  /* Titles should break on sense, not on the container edge. */
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* Paragraphs avoid a single word stranded on the last line. */
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Digits align in columns everywhere they are counted or compared. */
+  table, .tabular, time, [data-count] {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1, 'kern' 1;
+  }
+
+  /**
+   * Counted figures (dashboard tiles, per-person stats) read better a shade
+   * lighter and slightly tighter than a heading of the same size — the
+   * label carries the meaning, the number just has to be scannable.
+   */
+  [data-stat] {
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.014em;
+    font-weight: 600;
+  }
+
+  /**
+   * IBM Plex Sans is drawn a little tight for UI at small sizes. A touch of
+   * positive tracking below 15px restores the spacing the design needs, and a
+   * touch of negative tracking on the large serif keeps display text from
+   * feeling loose. Both are barely perceptible individually and obvious in
+   * aggregate.
+   */
+  .text-ui, .text-meta {
+    letter-spacing: 0.006em;
+  }
+
+  input, select, textarea, button {
+    font-family: inherit;
+    font-feature-settings: inherit;
+  }
+
+  /* Focus: 2px plum ring at 2px offset, visible on every interactive thing. */
+  :focus-visible {
+    outline: 2px solid theme('colors.plum.600');
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /**
+   * The honour-board rule: a single 1px gold line under each page title.
+   * This is the structural device that carries hierarchy, so the interface
+   * does not need heavy boxes.
+   */
+  .rule-gold {
+    @apply border-b border-gold-500/70;
+  }
+
+  /* Gold type is only ever safe on deep purple, or as gold-700 on light. */
+  .gold-on-plum {
+    color: theme('colors.gold.500');
+  }
+
+  /**
+   * Long-form copy written by staff (job descriptions). Paragraphs, plain
+   * lines and "- " bullets are turned into real elements by RichText; this
+   * gives them a reading rhythm at the 70-character measure.
+   */
+  .prose-job {
+    @apply max-w-measure text-body text-ink;
+  }
+  .prose-job > * + * {
+    margin-top: 0.85em;
+  }
+  .prose-job h3 {
+    @apply font-serif text-heading font-semibold text-ink;
+    margin-top: 1.6em;
+  }
+  .prose-job h3 + * {
+    margin-top: 0.5em;
+  }
+  .prose-job ul {
+    @apply space-y-1.5;
+  }
+  .prose-job li {
+    @apply relative pl-5;
+  }
+  .prose-job li::before {
+    content: '';
+    @apply absolute left-1 top-[0.7em] h-1.5 w-1.5 rounded-full bg-plum-300;
+  }
+}
+
+@layer components {
+  /**
+   * Text links: an underline that draws in from the left on hover, rather
+   * than snapping on. Uses background-size, so nothing reflows.
+   */
+  .link-sweep {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 1px;
+    padding-bottom: 1px;
+    transition:
+      background-size var(--dur-panel) var(--ease-out),
+      color var(--dur-micro) var(--ease-out);
+  }
+  .link-sweep:hover,
+  .link-sweep:focus-visible {
+    background-size: 100% 1px;
+  }
+
+  /**
+   * Links on the plum bar: a soft pill fades in under the pointer. The active
+   * marker is a separate animated element (see BarNavLink).
+   */
+  .bar-link {
+    @apply relative isolate whitespace-nowrap rounded-control px-3 py-2 text-ui font-semibold text-white/75 transition-colors duration-base;
+  }
+  .bar-link::before {
+    content: '';
+    @apply absolute inset-0 -z-10 rounded-control bg-white/0 transition-[background-color,transform] duration-base;
+    transform: scale(0.92);
+  }
+  .bar-link:hover {
+    @apply text-white;
+  }
+  .bar-link:hover::before {
+    @apply bg-white/10;
+    transform: scale(1);
+  }
+  .bar-link[aria-current='page'] {
+    @apply text-gold-500;
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /**
+   * Expand without animating height: grid-template-rows 0fr -> 1fr only
+   * touches the grid track, which does not force layout the way height does.
+   */
+  .grid-expand {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--dur-panel) var(--ease-out);
+  }
+  .grid-expand[data-open='true'] {
+    grid-template-rows: 1fr;
+  }
+  .grid-expand > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/**
+ * Route content settles in over one panel beat: a short fade. It is applied
+ * to the outlet wrapper keyed by path, so it plays on navigation only — never
+ * on data refetches, and never staggered.
+ *
+ * Opacity only, on purpose. An animated transform (even one ending at `none`)
+ * makes the wrapper the containing block for every position: fixed child —
+ * dialogs, drawers and the sticky action bars would anchor to the page
+ * instead of the viewport.
+ */
+@keyframes page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-enter {
+  animation: page-enter var(--dur-panel) var(--ease-out);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fade-in var(--dur-base) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Not optional: every transition collapses to an instant state change. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Yugam International School — Job Portal",
+  "short_name": "Yugam Careers",
+  "description": "Teaching and staff openings at Yugam International School.",
+  "icons": [
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ],
+  "theme_color": "#2E1065",
+  "background_color": "#F3F1ED",
+  "display": "standalone",
+  "start_url": "/"
+}
