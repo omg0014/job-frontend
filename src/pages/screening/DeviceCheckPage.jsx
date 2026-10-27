@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { Check, Video, Mic, Sun, RefreshCw } from 'lucide-react';
+import { Check, Video, Sun, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { request } from '../../api/client.js';
 import { endpoints } from '../../api/endpoints.js';
@@ -25,11 +25,6 @@ export const DeviceCheckPage = () => {
   const videoRef = useRef(null);
   const playbackRef = useRef(null);
   const chunksRef = useRef([]);
-  const analyserRef = useRef(null);
-  const audioCtxRef = useRef(null);
-  const rafRef = useRef(null);
-
-  const [level, setLevel] = useState(0);
   const [testUrl, setTestUrl] = useState(null);
   const [played, setPlayed] = useState(false);
   const [audioOnly, setAudioOnly] = useState(false);
@@ -52,40 +47,6 @@ export const DeviceCheckPage = () => {
     onSuccess: () => navigate(`/applications/${id}/screening`),
     onError: (err) => toast.error(err.message),
   });
-
-  // Mic meter. An AnalyserNode driving a rAF loop, so the bar tracks the voice
-  // closely enough that a candidate can tell it is actually listening.
-  useEffect(() => {
-    if (!stream) return undefined;
-    const AudioCtx = window.AudioContext ?? window.webkitAudioContext;
-    if (!AudioCtx) return undefined;
-
-    const context = new AudioCtx();
-    audioCtxRef.current = context;
-    const source = context.createMediaStreamSource(stream);
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 512;
-    source.connect(analyser);
-    analyserRef.current = analyser;
-
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    const loop = () => {
-      analyser.getByteTimeDomainData(data);
-      let peak = 0;
-      for (let i = 0; i < data.length; i += 1) {
-        peak = Math.max(peak, Math.abs(data[i] - 128));
-      }
-      setLevel(Math.min(100, Math.round((peak / 128) * 160)));
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    loop();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      source.disconnect();
-      context.close().catch(() => {});
-    };
-  }, [stream]);
 
   useEffect(() => {
     if (videoRef.current && stream) videoRef.current.srcObject = stream;
@@ -132,7 +93,6 @@ export const DeviceCheckPage = () => {
 
   const checklist = [
     { icon: Video, label: audioOnly ? 'Microphone is on' : 'I can see myself', done: Boolean(stream) },
-    { icon: Mic, label: 'The bar moves when I speak', done: level > 12 },
     { icon: Sun, label: 'I played my test clip back', done: played },
   ];
   const ready = checklist.every((item) => item.done);
@@ -202,27 +162,9 @@ export const DeviceCheckPage = () => {
           ) : null}
         </div>
 
-        <div className="p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            <Mic className="h-4 w-4 shrink-0 text-ink-soft" aria-hidden="true" />
-            <div
-              className="h-2 flex-1 overflow-hidden rounded-full bg-line"
-              role="meter"
-              aria-label="Microphone level"
-              aria-valuenow={level}
-            >
-              <div
-                className={clsx(
-                  'h-full rounded-full transition-[width] duration-75',
-                  level > 12 ? 'bg-status-short-ink' : 'bg-ink-soft/40',
-                )}
-                style={{ width: `${level}%` }}
-              />
-            </div>
-          </div>
-
+        <div className="space-y-5 p-5 sm:p-6">
           {testUrl ? (
-            <div className="mt-4">
+            <div>
               <p className="text-ui font-semibold text-ink">Your test clip</p>
               <video
                 ref={playbackRef}
@@ -234,7 +176,7 @@ export const DeviceCheckPage = () => {
             </div>
           ) : null}
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant={testUrl ? 'secondary' : 'primary'}
               onClick={recordTest}
@@ -283,7 +225,7 @@ export const DeviceCheckPage = () => {
         </Button>
         {!ready ? (
           <p className="mt-2 text-meta text-ink-soft">
-            Finish the three checks above to continue.
+            Finish the two checks above to continue.
           </p>
         ) : null}
       </div>
